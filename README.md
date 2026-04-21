@@ -28,10 +28,8 @@ pip install pynmea2
 
 ## Parsing
 
-You can parse individual NMEA sentences using the `parse(data, check=False)` function, which takes a string containing a
+You can parse individual NMEA sentences using the `parse(data)` function, which takes a string containing a
 NMEA 0183 sentence and returns a `NMEASentence` object. Note that the leading '$' is optional and trailing whitespace is ignored when parsing a sentence.
-
-With `check=False`, `parse` will accept NMEA messages that do not have checksums, however it will still raise `pynmea2.ChecksumError` if they are present. `check=True` will also raise `ChecksumError` if the checksum is missing.
 
 Example:
 
@@ -90,6 +88,22 @@ For example, `latitude` and `longitude` properties exist as helpers to access th
 >>> '%02d°%02d′%07.4f″' % (msg.latitude, msg.latitude_minutes, msg.latitude_seconds)
 "-19°29′02.7000″"
 ```
+
+
+## Checksums
+
+parse has an optional argument:
+
+`parse(data, checksums='check' (DEFAULT) | 'required' | 'my_data_is_corrupt')`
+
+| checksums value | `'required'` | `'check'` (default value) | `'my_data_is_corrupt'` |
+|----|----|----|----|
+| sentence with valid checksum | accepted | accepted | accepted |
+| sentence without checkum  | `ChecksumError` | accepted | accepted |
+| sentence with invalid checksum  | `ChecksumError` | `ChecksumError` | accepted |
+
+A note about invalid checksums: if a checksum is invalid, it is more likely than not that the sentence values themselves are corrupt, so be wary of using them without further validation. The corruption may also cause parsing errors which could raise `ParseError` even before the `checksums=` parameter takes effect, so you will still have to handle an exception
+
 
 ## Generating
 

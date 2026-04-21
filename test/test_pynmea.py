@@ -5,7 +5,7 @@ data = "$GPGGA,184353.07,1929.045,S,02410.506,E,1,04,2.6,100.00,M,-33.9,M,,0000*
 
 
 def test_version():
-    version = '1.19.0'
+    version = '1.20.0'
     assert pynmea2.version == version
     assert pynmea2.__version__ == version
 
@@ -128,15 +128,46 @@ def test_timestamp():
 
 
 def test_corrupt_message():
+    # checksum= parameter acts as intended
+    valid_checksum =    '$CCGPQ,GGA*2B'
+    no_checksum =       '$CCGPQ,GGA'
+    invalid_checksum =  '$CCGPQ,GGA*FF'
+    invalid_syntax =    '$CCGPQ.GGA*2B'
+
+
+    assert pynmea2.parse(valid_checksum, checksums='required')
+    assert pynmea2.parse(valid_checksum, checksums='check')
+    assert pynmea2.parse(valid_checksum, checksums='my_data_is_corrupt')
+
+    with pytest.raises(pynmea2.ChecksumError):
+        assert pynmea2.parse(no_checksum, checksums='required')
+    assert pynmea2.parse(no_checksum, checksums='check')
+    assert pynmea2.parse(no_checksum, checksums='my_data_is_corrupt')
+
+
+    with pytest.raises(pynmea2.ChecksumError):
+        assert pynmea2.parse(invalid_checksum, checksums='required')
+    with pytest.raises(pynmea2.ChecksumError):
+        assert pynmea2.parse(invalid_checksum, checksums='check')
+    assert pynmea2.parse(invalid_checksum, checksums='my_data_is_corrupt')
+
+
+    with pytest.raises(pynmea2.ParseError):
+        assert pynmea2.parse(invalid_syntax, checksums='my_data_is_corrupt')
+
+    with pytest.raises(AssertionError):
+        assert pynmea2.parse(invalid_syntax, checksums='foobar')
+
+    # specific example
     # data is corrupt starting here ------------------------------v
     data = '$GPRMC,172142.00,A,4805.30256324,N,11629.09084774,W,0.D'
 
     # fails with strict parsing
     with pytest.raises(pynmea2.ChecksumError):
-        msg = pynmea2.parse(data, check=True)
+        msg = pynmea2.parse(data, checksums='required')
 
     # lazy parsing succeeds
-    msg = pynmea2.parse(data, check=False)
+    msg = pynmea2.parse(data, checksums='check')
     assert isinstance(msg, pynmea2.types.RMC)
     # corrupt data
     assert msg.spd_over_grnd == '0.D'
@@ -145,6 +176,7 @@ def test_corrupt_message():
 
     # renders unchanged
     assert msg.render(checksum=False) == data
+
 
 
 #

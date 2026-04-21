@@ -1,5 +1,4 @@
 test:
-	python2 -m pytest .
 	python3 -m pytest .
 
 publish: test

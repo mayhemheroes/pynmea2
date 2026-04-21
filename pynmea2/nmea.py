@@ -87,7 +87,7 @@ class NMEASentence(NMEASentenceBase):
         return reduce(operator.xor, map(ord, nmea_str), 0)
 
     @staticmethod
-    def parse(line, check=False):
+    def parse(line, check=None, checksums='check'):
         '''
         parse(line)
 
@@ -97,6 +97,15 @@ class NMEASentence(NMEASentenceBase):
         Raises ValueError if the string could not be parsed, or if the checksum
         did not match.
         '''
+
+        # backwards compatibility
+        if check is not None:
+            if check is True:
+                checksums = 'required'
+            if check is False:
+                checksums = 'check'
+        assert checksums in {'required', 'check', 'my_data_is_corrupt'}
+
         match = NMEASentence.sentence_re.match(line)
         if not match:
             raise ParseError('could not parse data', line)
@@ -112,11 +121,12 @@ class NMEASentence(NMEASentenceBase):
             cs1 = int(checksum, 16)
             cs2 = NMEASentence.checksum(nmea_str)
             if cs1 != cs2:
-                raise ChecksumError(
-                    'checksum does not match: %02X != %02X' % (cs1, cs2), data)
-        elif check:
+                if checksums != 'my_data_is_corrupt':
+                    raise ChecksumError(
+                        'checksum does not match: %02X != %02X' % (cs1, cs2), data)
+        elif checksums == 'required':
             raise ChecksumError(
-                'strict checking requested but checksum missing', data)
+                'checksums are required, but missing from the sentence', data)
 
         talker_match = NMEASentence.talker_re.match(sentence_type)
         if talker_match:
