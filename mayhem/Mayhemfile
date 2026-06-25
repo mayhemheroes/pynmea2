@@ -1,0 +1,7 @@
+project: pynmea2
+target: fuzz-parse
+testsuite:
+  - file:///mayhem/mayhem/testsuite
+cmds:
+  - cmd: /mayhem/fuzz-parse
+    libfuzzer: true
