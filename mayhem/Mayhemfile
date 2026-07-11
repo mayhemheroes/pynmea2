@@ -1,0 +1,8 @@
+project: pynmea2
+target: fuzz-parse
+testsuite:
+  - https://$MAYHEM_DOMAIN/$MAYHEM_PROJECT/$MAYHEM_TARGET/testsuite.tar
+  - file://mayhem/fuzz-parse/testsuite
+cmds:
+  - cmd: /mayhem/fuzz-parse
+    libfuzzer: true
